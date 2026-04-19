@@ -22,24 +22,29 @@ export default async function RequisitionsPage() {
   const isAdmin = roles.includes('admin');
   const hasElevatedRole = isTreasurer || isAdmin || isSigner;
 
-  // Determine which view to show (treasurer takes priority over signer)
-  const showTreasurerQueue = isTreasurer;
-  const showSignerQueue = isSigner && !isTreasurer;
-
-  // Fetch data based on role
+  // Fetch all requisitions for elevated roles
   const requisitions = hasElevatedRole
     ? await getAll()
     : await getByUser(auth.profile.id);
 
+  // Treasurer queue counts
   const counts = isTreasurer ? await getCountsByStatus() : {};
 
-  // Signer-specific data
-  const pendingForSigner = showSignerQueue
+  // Signer data — always fetch if user has signer role, regardless of other roles
+  const pendingForSigner = isSigner
     ? await getPendingForSigner(auth.profile.id)
     : [];
-  const recentApprovals = showSignerQueue
+  const recentApprovals = isSigner
     ? await getBySignerRecent(auth.profile.id, 30)
     : [];
+
+  // Determine primary view:
+  // - Treasurer sees treasurer queue (with signer section if also a signer)
+  // - Signer (non-treasurer) sees signer queue
+  // - Admin (non-signer, non-treasurer) sees all requisitions
+  // - Submitter sees own requisitions
+  const showTreasurerQueue = isTreasurer;
+  const showSignerQueue = isSigner && !isTreasurer;
 
   return (
     <div className="mx-auto max-w-lg px-4 py-6">
@@ -61,10 +66,21 @@ export default async function RequisitionsPage() {
         </Button>
       </Link>
 
+      {/* If user is a signer (even with other roles), show signer queue first */}
+      {isSigner && pendingForSigner.length > 0 && (
+        <div className="mb-8">
+          <SignerQueue pending={pendingForSigner} recentApprovals={recentApprovals} />
+        </div>
+      )}
+
+      {/* Then show the role-appropriate main view */}
       {showTreasurerQueue ? (
         <TreasurerQueue requisitions={requisitions} counts={counts} />
       ) : showSignerQueue ? (
-        <SignerQueue pending={pendingForSigner} recentApprovals={recentApprovals} />
+        // Signer-only users already see the queue above; show recent if no pending
+        pendingForSigner.length === 0 ? (
+          <SignerQueue pending={pendingForSigner} recentApprovals={recentApprovals} />
+        ) : null
       ) : (
         <RequisitionList requisitions={requisitions} />
       )}

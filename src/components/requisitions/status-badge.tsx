@@ -13,6 +13,10 @@ const STATUS_CONFIG: Record<
   returned: { label: 'Returned', icon: '↩', variant: 'secondary' },
   cancelled: { label: 'Cancelled', icon: '—', variant: 'outline' },
   recorded: { label: 'Recorded', icon: '✓', variant: 'default' },
+  // Deposit statuses
+  in_progress: { label: 'In Progress', icon: '✏️', variant: 'default' },
+  pending_verification: { label: 'Pending Verification', icon: '⏳', variant: 'secondary' },
+  verified: { label: 'Verified', icon: '✓', variant: 'default' },
 };
 
 type StatusBadgeProps = {
@@ -38,6 +42,9 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
     returned: 'bg-orange-100 text-orange-800 border-orange-200',
     cancelled: 'bg-gray-100 text-gray-600 border-gray-200',
     recorded: 'bg-green-100 text-green-800 border-green-200',
+    in_progress: 'bg-blue-100 text-blue-800 border-blue-200',
+    pending_verification: 'bg-amber-100 text-amber-800 border-amber-200',
+    verified: 'bg-green-100 text-green-800 border-green-200',
   };
 
   return (

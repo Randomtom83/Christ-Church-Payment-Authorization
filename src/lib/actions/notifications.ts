@@ -190,3 +190,24 @@ export async function notifyRejection(
     );
   }
 }
+
+/** Notify treasurer that a deposit has been verified. */
+export async function notifyTreasurerDepositVerified(deposit: {
+  id: string;
+  total_amount: string;
+  deposit_date: string;
+}): Promise<void> {
+  const treasurers = await getTreasurers();
+  const link = `${APP_URL}/deposits/${deposit.id}`;
+
+  for (const t of treasurers) {
+    if (!t.email) continue;
+    await sendEmail(
+      t.email,
+      `Sunday Deposit Verified — ${fmtAmount(deposit.total_amount)}`,
+      `The Sunday deposit for ${deposit.deposit_date} has been verified by both counters.\n\n` +
+      `Total: ${fmtAmount(deposit.total_amount)}\n\n` +
+      `View the full breakdown and check images here: ${link}`
+    );
+  }
+}

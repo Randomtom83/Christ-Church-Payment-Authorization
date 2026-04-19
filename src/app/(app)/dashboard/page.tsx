@@ -17,7 +17,7 @@ import { SignerCards } from '@/components/dashboard/signer-cards';
 import { TreasurerCards } from '@/components/dashboard/treasurer-cards';
 import { CounterCards } from '@/components/dashboard/counter-cards';
 import { SubmitterCards } from '@/components/dashboard/submitter-cards';
-import { AdminCards } from '@/components/dashboard/admin-cards';
+// AdminCards moved to More menu
 import { ActivityFeed } from '@/components/dashboard/activity-feed';
 
 export const metadata: Metadata = { title: 'Dashboard' };
@@ -47,7 +47,7 @@ export default async function DashboardPage() {
     (isSigner || isCounter || isTreasurer) ? getTodaysDeposit() : null,
     getRecentActivity(10),
     isSubmitter ? getUserActiveRequisitions(auth.profile.id) : null,
-    isAdmin ? getSystemHealth() : null,
+    null, // System health moved to More menu
   ]);
 
   return (
@@ -56,11 +56,6 @@ export default async function DashboardPage() {
         <Greeting name={auth.profile.full_name} />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Admin cards */}
-          {isAdmin && adminData && (
-            <AdminCards health={adminData} />
-          )}
-
           {/* Signer cards */}
           {isSigner && signerData && (
             <SignerCards

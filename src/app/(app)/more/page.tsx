@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { getCurrentUser } from "@/lib/auth";
+import { getSystemHealth } from "@/lib/db/dashboard";
+import { AdminCards } from "@/components/dashboard/admin-cards";
 import { SignOutButton } from "./sign-out-button";
 
 export const metadata: Metadata = { title: "More" };
@@ -28,13 +30,16 @@ export default async function MorePage() {
     (link) => !link.adminOnly || isAdmin,
   );
 
+  const health = isAdmin ? await getSystemHealth() : null;
+
   return (
     <section className="mx-auto max-w-lg px-4 py-6 space-y-4">
-      <header className="space-y-1">
+      <header>
         <h1 className="text-2xl font-bold leading-snug text-foreground">
           More
         </h1>
       </header>
+
       <Card>
         <CardContent className="py-2">
           <ul className="divide-y divide-border">
@@ -57,6 +62,10 @@ export default async function MorePage() {
           </ul>
         </CardContent>
       </Card>
+
+      {isAdmin && health && (
+        <AdminCards health={health} />
+      )}
 
       <Card>
         <CardContent className="pt-6">

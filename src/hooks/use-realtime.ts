@@ -61,3 +61,28 @@ export function usePendingCount(enabled: boolean) {
 
   return count;
 }
+
+/**
+ * Subscribe to changes on multiple tables.
+ * Returns a counter that increments on any change across all tables.
+ */
+export function useDashboardChanges() {
+  const [changeCount, setChangeCount] = useState(0);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel('dashboard-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'requisitions' }, () => setChangeCount((c) => c + 1))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'deposits' }, () => setChangeCount((c) => c + 1))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'approvals' }, () => setChangeCount((c) => c + 1))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'deposit_items' }, () => setChangeCount((c) => c + 1))
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  return changeCount;
+}

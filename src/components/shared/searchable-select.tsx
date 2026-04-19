@@ -130,7 +130,6 @@ export function SearchableSelect({
     <div className="space-y-2" ref={containerRef}>
       <Label htmlFor={id} className="text-base font-medium">
         {label}
-        {required && ' (required)'}
       </Label>
       <div className="relative">
         <Input

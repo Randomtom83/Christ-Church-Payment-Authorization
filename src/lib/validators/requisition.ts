@@ -26,7 +26,7 @@ export const requisitionSchema = z.object({
       },
       { message: 'Amount can have at most 2 decimal places' }
     ),
-  account_id: z.string().uuid('Select an account'),
+  account_id: z.string().optional().or(z.literal('')),
   payment_method: z.enum(['check', 'online'], {
     error: 'Select a payment method',
   }),
@@ -58,7 +58,7 @@ export const templateSchema = z.object({
       },
       { message: 'Amount must be greater than zero if provided' }
     ),
-  account_id: z.string().uuid('Select an account'),
+  account_id: z.string().optional().or(z.literal('')),
   payment_method: z.enum(['check', 'online']),
   description: z.string().max(2000).optional(),
 });

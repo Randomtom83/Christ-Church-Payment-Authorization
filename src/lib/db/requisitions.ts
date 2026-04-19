@@ -98,7 +98,7 @@ export async function create(data: {
   vendor_id?: string | null;
   amount: number;
   entity: string;
-  account_id: string;
+  account_id: string | null;
   payment_method: string;
   description: string;
   template_id?: string | null;

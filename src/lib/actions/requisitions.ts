@@ -51,7 +51,7 @@ export async function createRequisition(formData: FormData): Promise<ActionResul
       vendor_id: parsed.data.vendor_id || null,
       amount,
       entity: parsed.data.entity,
-      account_id: parsed.data.account_id,
+      account_id: parsed.data.account_id || null,
       payment_method: parsed.data.payment_method,
       description: parsed.data.description,
       template_id: templateId || null,
@@ -113,7 +113,7 @@ export async function createRequisition(formData: FormData): Promise<ActionResul
           templateForm.set('payee_name', parsed.data.payee_name);
           if (parsed.data.vendor_id) templateForm.set('vendor_id', parsed.data.vendor_id);
           templateForm.set('amount', parsed.data.amount);
-          templateForm.set('account_id', parsed.data.account_id);
+          if (parsed.data.account_id) templateForm.set('account_id', parsed.data.account_id);
           templateForm.set('payment_method', parsed.data.payment_method);
           templateForm.set('description', parsed.data.description);
           await createTemplate(templateForm);

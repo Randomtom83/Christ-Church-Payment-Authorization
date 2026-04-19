@@ -42,7 +42,7 @@ export async function createTemplate(formData: FormData): Promise<ActionResult> 
       vendor_id: parsed.data.vendor_id || null,
       amount,
       entity: parsed.data.entity,
-      account_id: parsed.data.account_id,
+      account_id: parsed.data.account_id || null,
       payment_method: parsed.data.payment_method,
       description: parsed.data.description || null,
     });
@@ -97,7 +97,7 @@ export async function updateTemplate(id: string, formData: FormData): Promise<Ac
       vendor_id: parsed.data.vendor_id || null,
       amount,
       entity: parsed.data.entity,
-      account_id: parsed.data.account_id,
+      account_id: parsed.data.account_id || null,
       payment_method: parsed.data.payment_method,
       description: parsed.data.description || null,
     });

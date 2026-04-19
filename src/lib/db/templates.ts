@@ -57,7 +57,7 @@ export async function create(data: {
   vendor_id?: string | null;
   amount?: number | null;
   entity: string;
-  account_id: string;
+  account_id?: string | null;
   payment_method: string;
   description?: string | null;
 }) {
@@ -81,7 +81,7 @@ export async function update(
     vendor_id: string | null;
     amount: number | null;
     entity: string;
-    account_id: string;
+    account_id: string | null;
     payment_method: string;
     description: string | null;
   }>

@@ -192,7 +192,7 @@ export function RequisitionForm({ accounts, vendors, templateId, templateData }:
 
       {/* Entity selector */}
       <fieldset className="space-y-2">
-        <legend className="text-base font-medium">Entity (required)</legend>
+        <legend className="text-base font-medium">Entity</legend>
         <div className="grid grid-cols-2 gap-3">
           {[
             { value: 'church', label: 'Christ Church' },
@@ -241,7 +241,7 @@ export function RequisitionForm({ accounts, vendors, templateId, templateData }:
       {/* Payee name */}
       <div className="space-y-2">
         <Label htmlFor="payee_name" className="text-base font-medium">
-          Payee Name (required)
+          Payee Name
         </Label>
         <Input
           id="payee_name"
@@ -263,7 +263,7 @@ export function RequisitionForm({ accounts, vendors, templateId, templateData }:
       {/* Amount */}
       <div className="space-y-2">
         <Label htmlFor="amount" className="text-base font-medium">
-          Amount (required)
+          Amount
         </Label>
         <div className="relative">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-lg text-gray-500">$</span>
@@ -297,7 +297,7 @@ export function RequisitionForm({ accounts, vendors, templateId, templateData }:
       </div>
 
       {/* Account selector */}
-      {entity ? (
+      {entity ? (<>
         <SearchableSelect
           id="account"
           label="Account"
@@ -308,20 +308,22 @@ export function RequisitionForm({ accounts, vendors, templateId, templateData }:
             if (val) validateField('account_id', val);
           }}
           placeholder="Search accounts..."
-          required
           error={fieldErrors.account_id}
           groupBy
         />
-      ) : (
+        <p className="text-sm text-gray-500">
+          Not sure? Leave blank — the treasurer can assign the account later.
+        </p>
+      </>) : (
         <div className="space-y-2">
-          <Label className="text-base font-medium">Account (required)</Label>
+          <Label className="text-base font-medium">Account</Label>
           <p className="text-lg text-gray-500 italic">Select an entity first</p>
         </div>
       )}
 
       {/* Payment method */}
       <fieldset className="space-y-2">
-        <legend className="text-base font-medium">Payment Method (required)</legend>
+        <legend className="text-base font-medium">Payment Method</legend>
         <div className="grid grid-cols-2 gap-3">
           {[
             { value: 'check', label: 'Check' },
@@ -358,7 +360,7 @@ export function RequisitionForm({ accounts, vendors, templateId, templateData }:
       {/* Description */}
       <div className="space-y-2">
         <Label htmlFor="description" className="text-base font-medium">
-          Description / Purpose (required)
+          Description / Purpose
         </Label>
         <textarea
           id="description"

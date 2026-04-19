@@ -81,3 +81,27 @@ export async function setProfileActive(
 
   if (error) throw new Error(`Failed to update active status: ${error.message}`);
 }
+
+/** Get all active profiles with a specific role. Uses admin client. */
+export async function getProfilesByRole(role: string): Promise<Profile[]> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .contains("role", [role])
+    .eq("is_active", true)
+    .order("full_name", { ascending: true });
+
+  if (error) throw new Error(`Failed to fetch profiles by role: ${error.message}`);
+  return (data ?? []) as Profile[];
+}
+
+/** Get all active signers. */
+export async function getSigners(): Promise<Profile[]> {
+  return getProfilesByRole("signer");
+}
+
+/** Get all active treasurers. */
+export async function getTreasurers(): Promise<Profile[]> {
+  return getProfilesByRole("treasurer");
+}

@@ -11,7 +11,7 @@ export type Requisition = {
   payee_name: string;
   amount: string; // DECIMAL comes back as string from Supabase
   entity: string;
-  account_id: string;
+  account_id: string | null;
   payment_method: string;
   description: string;
   check_number: string | null;
@@ -22,6 +22,10 @@ export type Requisition = {
   paid_at: string | null;
   paid_by: string | null;
   notes: string | null;
+  returned_reason: string | null;
+  payment_date: string | null;
+  payment_reference: string | null;
+  prepared_notes: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -126,4 +130,164 @@ export async function updateStatus(id: string, status: string) {
     .eq('id', id);
 
   if (error) throw error;
+}
+
+/** Get requisitions filtered by status. */
+export async function getByStatus(status: string, ascending = true) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('requisitions')
+    .select(LIST_SELECT)
+    .eq('status', status)
+    .order('submitted_at', { ascending });
+
+  if (error) throw error;
+  return data;
+}
+
+/** Get counts for each status (for queue badges). */
+export async function getCountsByStatus() {
+  const supabase = await createClient();
+  const statuses = ['submitted', 'pending_approval', 'approved', 'paid', 'returned'];
+  const counts: Record<string, number> = {};
+
+  for (const status of statuses) {
+    const { count, error } = await supabase
+      .from('requisitions')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', status);
+
+    counts[status] = error ? 0 : (count ?? 0);
+  }
+
+  return counts;
+}
+
+/** Prepare a requisition for approval (treasurer action). */
+export async function updatePrepare(
+  id: string,
+  data: {
+    account_id: string;
+    check_number?: string | null;
+    prepared_notes?: string | null;
+    prepared_by: string;
+  }
+) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('requisitions')
+    .update({
+      account_id: data.account_id,
+      check_number: data.check_number ?? null,
+      prepared_notes: data.prepared_notes ?? null,
+      prepared_by: data.prepared_by,
+      prepared_at: new Date().toISOString(),
+      status: 'pending_approval',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id);
+
+  if (error) throw error;
+}
+
+/** Return a requisition to the submitter (treasurer action). */
+export async function updateReturn(id: string, reason: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('requisitions')
+    .update({
+      status: 'returned',
+      returned_reason: reason,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id);
+
+  if (error) throw error;
+}
+
+/** Mark a requisition as paid (treasurer action). */
+export async function updatePaid(
+  id: string,
+  data: {
+    payment_date: string;
+    payment_reference?: string | null;
+    paid_by: string;
+  }
+) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('requisitions')
+    .update({
+      status: 'paid',
+      payment_date: data.payment_date,
+      payment_reference: data.payment_reference ?? null,
+      paid_by: data.paid_by,
+      paid_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id);
+
+  if (error) throw error;
+}
+
+/** Update a returned requisition (submitter resubmits). */
+export async function updateResubmit(
+  id: string,
+  data: {
+    payee_name: string;
+    amount: number;
+    entity: string;
+    account_id: string | null;
+    payment_method: string;
+    description: string;
+    vendor_id?: string | null;
+  }
+) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('requisitions')
+    .update({
+      ...data,
+      status: 'submitted',
+      returned_reason: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id);
+
+  if (error) throw error;
+}
+
+/** Get requisitions for CSV export with filters. */
+export async function getForExport(filters: {
+  fromDate?: string;
+  toDate?: string;
+  entity?: string;
+  status?: string;
+}) {
+  const supabase = await createClient();
+  let q = supabase
+    .from('requisitions')
+    .select(`
+      *,
+      account:accounts(id, name, code, category),
+      submitter:profiles!requisitions_submitted_by_fkey(id, full_name)
+    `)
+    .order('submitted_at', { ascending: true });
+
+  if (filters.fromDate) {
+    q = q.gte('submitted_at', filters.fromDate);
+  }
+  if (filters.toDate) {
+    q = q.lte('submitted_at', filters.toDate + 'T23:59:59.999Z');
+  }
+  if (filters.entity) {
+    q = q.eq('entity', filters.entity);
+  }
+  if (filters.status) {
+    q = q.eq('status', filters.status);
+  }
+
+  const { data, error } = await q;
+  if (error) throw error;
+  return data;
 }

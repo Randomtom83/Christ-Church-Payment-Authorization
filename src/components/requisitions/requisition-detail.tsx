@@ -90,6 +90,15 @@ export function RequisitionDetail({ requisition, currentUserId, attachmentUrls }
           {requisition.check_number && (
             <DetailRow label="Check #" value={requisition.check_number} />
           )}
+          {requisition.prepared_notes && (
+            <DetailRow label="Treasurer Notes" value={requisition.prepared_notes} />
+          )}
+          {requisition.payment_date && (
+            <DetailRow label="Payment Date" value={formatDateTime(requisition.payment_date)} />
+          )}
+          {requisition.payment_reference && (
+            <DetailRow label="Payment Reference" value={requisition.payment_reference} />
+          )}
         </CardContent>
       </Card>
 

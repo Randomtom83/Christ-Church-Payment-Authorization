@@ -16,7 +16,9 @@ type Props = {
 const ACTION_LABELS: Record<string, string> = {
   'requisition.submitted': 'Submitted',
   'requisition.cancelled': 'Cancelled',
-  'requisition.prepared': 'Prepared',
+  'requisition.prepared': 'Prepared & routed for approval',
+  'requisition.returned': 'Returned to submitter',
+  'requisition.resubmitted': 'Resubmitted',
   'requisition.approved': 'Approved',
   'requisition.rejected': 'Rejected',
   'requisition.paid': 'Marked as Paid',
@@ -49,8 +51,9 @@ export function RequisitionTimeline({ entries }: Props) {
                 <p className="text-sm text-gray-500">
                   {formatDateTime(entry.created_at)}
                 </p>
-                {entry.action === 'requisition.rejected' && entry.details && 'reason' in entry.details && (
-                  <p className="text-base text-red-700 mt-1">
+                {(entry.action === 'requisition.rejected' || entry.action === 'requisition.returned') &&
+                  entry.details && 'reason' in entry.details && (
+                  <p className="text-base text-orange-700 mt-1">
                     Reason: {String(entry.details.reason)}
                   </p>
                 )}

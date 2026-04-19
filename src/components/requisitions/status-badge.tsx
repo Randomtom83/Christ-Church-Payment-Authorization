@@ -10,6 +10,7 @@ const STATUS_CONFIG: Record<
   approved: { label: 'Approved', icon: '✓', variant: 'default' },
   paid: { label: 'Paid', icon: '💵', variant: 'default' },
   rejected: { label: 'Rejected', icon: '✕', variant: 'destructive' },
+  returned: { label: 'Returned', icon: '↩', variant: 'secondary' },
   cancelled: { label: 'Cancelled', icon: '—', variant: 'outline' },
   recorded: { label: 'Recorded', icon: '✓', variant: 'default' },
 };
@@ -34,6 +35,7 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
     approved: 'bg-green-100 text-green-800 border-green-200',
     paid: 'bg-green-100 text-green-800 border-green-200',
     rejected: 'bg-red-100 text-red-800 border-red-200',
+    returned: 'bg-orange-100 text-orange-800 border-orange-200',
     cancelled: 'bg-gray-100 text-gray-600 border-gray-200',
     recorded: 'bg-green-100 text-green-800 border-green-200',
   };

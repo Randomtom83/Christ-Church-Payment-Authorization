@@ -138,6 +138,22 @@ export async function createRequisition(formData: FormData): Promise<ActionResul
       },
     });
 
+    // Notify treasurer of new submission
+    try {
+      const { notifyTreasurerNewSubmission } = await import('@/lib/actions/notifications');
+      await notifyTreasurerNewSubmission({
+        id: requisition.id,
+        req_number: requisition.req_number,
+        payee_name: parsed.data.payee_name,
+        amount: String(amount),
+        description: parsed.data.description,
+        entity: parsed.data.entity,
+        submitted_by: auth.profile.id,
+      });
+    } catch {
+      // Email failure doesn't block workflow
+    }
+
     return { success: true, requisitionId: requisition.id };
   } catch (err) {
     console.error('Create requisition failed:', err);

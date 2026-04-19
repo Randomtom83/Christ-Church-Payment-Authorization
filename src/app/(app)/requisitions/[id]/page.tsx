@@ -3,9 +3,12 @@ import { notFound, redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { getById } from '@/lib/db/requisitions';
 import { getSignedUrl } from '@/lib/db/attachments';
+import { getAll as getAllAccounts } from '@/lib/db/accounts';
 import { createClient } from '@/lib/supabase/server';
 import { RequisitionDetail } from '@/components/requisitions/requisition-detail';
 import { RequisitionTimeline } from '@/components/requisitions/requisition-timeline';
+import { TreasurerActions } from '@/components/requisitions/treasurer-actions';
+import { ReturnBanner } from '@/components/requisitions/return-banner';
 
 export const metadata: Metadata = { title: 'Requisition Detail' };
 
@@ -23,6 +26,10 @@ export default async function RequisitionDetailPage({ params, searchParams }: Pr
 
   const requisition = await getById(id);
   if (!requisition) notFound();
+
+  const roles = auth.profile.role as string[];
+  const isTreasurer = roles.includes('treasurer') || roles.includes('admin');
+  const isSubmitter = requisition.submitted_by === auth.profile.id;
 
   // Get signed URLs for attachments
   const attachmentUrls: Record<string, string> = {};
@@ -43,8 +50,10 @@ export default async function RequisitionDetailPage({ params, searchParams }: Pr
     .eq('entity_id', id)
     .order('created_at', { ascending: true });
 
-  // Enrich with user names
   const enriched = await enrichAuditEntries(auditEntries ?? []);
+
+  // Fetch accounts for treasurer actions (account assignment)
+  const accounts = isTreasurer ? await getAllAccounts() : [];
 
   return (
     <div className="mx-auto max-w-lg px-4 py-6 space-y-6">
@@ -57,11 +66,25 @@ export default async function RequisitionDetailPage({ params, searchParams }: Pr
         </div>
       )}
 
+      {/* Return banner (shown to submitter when status is returned) */}
+      {requisition.status === 'returned' && requisition.returned_reason && (
+        <ReturnBanner
+          reason={requisition.returned_reason}
+          requisitionId={requisition.id}
+          isSubmitter={isSubmitter}
+        />
+      )}
+
       <RequisitionDetail
         requisition={requisition}
         currentUserId={auth.profile.id}
         attachmentUrls={attachmentUrls}
       />
+
+      {/* Treasurer actions (prepare, return, mark paid) */}
+      {isTreasurer && (
+        <TreasurerActions requisition={requisition} accounts={accounts} />
+      )}
 
       <RequisitionTimeline entries={enriched} />
     </div>

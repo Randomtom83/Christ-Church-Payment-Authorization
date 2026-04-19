@@ -48,16 +48,19 @@ export const ROLES = [
 export type Role = (typeof ROLES)[number];
 
 /** Requisition status state machine.
- *  submitted → prepared → pending_approval → approved → paid → recorded
- *  (rejected may occur at submitted/prepared/pending_approval) */
+ *  submitted → pending_approval → approved → paid
+ *  submitted → returned → (submitter edits) → submitted
+ *  submitted → cancelled (by submitter)
+ *  (rejected may occur at pending_approval — Sprint 4) */
 export const REQUISITION_STATUSES = [
   "submitted",
-  "prepared",
+  "returned",
   "pending_approval",
   "approved",
   "paid",
   "recorded",
   "rejected",
+  "cancelled",
 ] as const;
 
 export type RequisitionStatus = (typeof REQUISITION_STATUSES)[number];

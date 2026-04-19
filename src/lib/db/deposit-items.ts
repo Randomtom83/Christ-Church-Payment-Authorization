@@ -1,5 +1,5 @@
 import 'server-only';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 
 export type DepositItem = {
   id: string;
@@ -31,7 +31,7 @@ export async function getByDeposit(depositId: string) {
   return data as DepositItem[];
 }
 
-/** Create a deposit item. */
+/** Create a deposit item. Uses admin client to bypass RLS (auth checked in server action). */
 export async function create(data: {
   deposit_id: string;
   item_type: string;
@@ -46,7 +46,7 @@ export async function create(data: {
   category_label?: string | null;
   notes?: string | null;
 }) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data: row, error } = await supabase
     .from('deposit_items')
     .insert(data)
@@ -73,7 +73,7 @@ export async function update(
     notes: string | null;
   }>
 ) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase
     .from('deposit_items')
     .update(data)
@@ -84,7 +84,7 @@ export async function update(
 
 /** Delete a deposit item. */
 export async function remove(id: string) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase
     .from('deposit_items')
     .delete()

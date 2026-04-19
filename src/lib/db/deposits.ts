@@ -1,5 +1,5 @@
 import 'server-only';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 
 export type Deposit = {
   id: string;
@@ -104,9 +104,9 @@ export async function getPendingVerification() {
   return data;
 }
 
-/** Create a new deposit. */
+/** Create a new deposit. Uses admin client (auth checked in server action). */
 export async function create(counterId: string) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data, error } = await supabase
     .from('deposits')
     .insert({
@@ -126,7 +126,7 @@ export async function updateTotals(
   id: string,
   totals: { total_checks: number; total_cash: number; total_amount: number }
 ) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase
     .from('deposits')
     .update({
@@ -140,7 +140,7 @@ export async function updateTotals(
 
 /** Update deposit status. */
 export async function updateStatus(id: string, status: string) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase
     .from('deposits')
     .update({ status, updated_at: new Date().toISOString() })
@@ -151,7 +151,7 @@ export async function updateStatus(id: string, status: string) {
 
 /** Record verification by Counter 2. */
 export async function updateVerification(id: string, counter2Id: string) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase
     .from('deposits')
     .update({
@@ -168,7 +168,7 @@ export async function updateVerification(id: string, counter2Id: string) {
 
 /** Reject verification — return to in_progress. */
 export async function rejectVerification(id: string, notes: string) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase
     .from('deposits')
     .update({

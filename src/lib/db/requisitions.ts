@@ -154,11 +154,12 @@ export async function getPendingForSigner(signerId: string) {
 
   const actedOn = new Set((myApprovals ?? []).map((a) => a.requisition_id));
 
-  // Filter: exclude already acted on AND exclude own submissions
-  return reqs.filter(
-    (r) => !actedOn.has(r.id) && r.submitter &&
-      (Array.isArray(r.submitter) ? r.submitter[0]?.id !== signerId : (r.submitter as { id: string }).id !== signerId)
-  );
+  // Filter: exclude already acted on
+  // Note: self-submission check (conflict of interest) is enforced server-side
+  // in the approval action, not in the list filter — so signers can at least
+  // SEE their own submissions in the queue and get a clear error if they try
+  // to approve them.
+  return reqs.filter((r) => !actedOn.has(r.id));
 }
 
 /** Get requisitions filtered by status. */

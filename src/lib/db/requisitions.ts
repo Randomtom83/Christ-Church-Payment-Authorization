@@ -136,14 +136,17 @@ export async function updateStatus(id: string, status: string) {
 export async function getPendingForSigner(signerId: string) {
   const supabase = await createClient();
 
-  // Get all pending_approval requisitions
+  // Use a simple select first — the joined LIST_SELECT can fail on some RLS configs
   const { data: reqs, error: reqError } = await supabase
     .from('requisitions')
-    .select(LIST_SELECT)
+    .select('id, req_number, payee_name, amount, entity, status, submitted_at, payment_method, account_id, submitted_by')
     .eq('status', 'pending_approval')
     .order('submitted_at', { ascending: true });
 
-  if (reqError) throw reqError;
+  if (reqError) {
+    console.error('getPendingForSigner query failed:', reqError.message);
+    return [];
+  }
   if (!reqs || reqs.length === 0) return [];
 
   // Get this signer's existing approvals
@@ -155,11 +158,26 @@ export async function getPendingForSigner(signerId: string) {
   const actedOn = new Set((myApprovals ?? []).map((a) => a.requisition_id));
 
   // Filter: exclude already acted on
-  // Note: self-submission check (conflict of interest) is enforced server-side
-  // in the approval action, not in the list filter — so signers can at least
-  // SEE their own submissions in the queue and get a clear error if they try
-  // to approve them.
-  return reqs.filter((r) => !actedOn.has(r.id));
+  const pending = reqs.filter((r) => !actedOn.has(r.id));
+
+  // Enrich with account names (separate query to avoid join issues)
+  const accountIds = [...new Set(pending.map((r) => r.account_id).filter(Boolean))] as string[];
+  let accountMap: Record<string, { id: string; name: string; category: string }> = {};
+  if (accountIds.length > 0) {
+    const { data: accounts } = await supabase
+      .from('accounts')
+      .select('id, name, category')
+      .in('id', accountIds);
+    if (accounts) {
+      accountMap = Object.fromEntries(accounts.map((a) => [a.id, { id: a.id, name: a.name, category: a.category }]));
+    }
+  }
+
+  return pending.map((r) => ({
+    ...r,
+    account: r.account_id ? accountMap[r.account_id] ?? null : null,
+    submitter: null as { id: string; full_name: string } | null,
+  }));
 }
 
 /** Get requisitions filtered by status. */

@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Role } from "@/lib/constants";
+import { NavBadge } from "@/components/layout/nav-badge";
+import { usePendingCount } from "@/hooks/use-realtime";
 
 type NavItem = {
   href: string;
@@ -31,6 +33,8 @@ type NavItem = {
   matchPrefix?: string;
   /** If set, user must have at least one of these roles to see this tab. */
   visibleTo?: Role[];
+  /** Key for badge lookup */
+  badgeKey?: string;
 };
 
 const NAV_ITEMS: NavItem[] = [
@@ -41,6 +45,7 @@ const NAV_ITEMS: NavItem[] = [
     icon: FileTextIcon,
     matchPrefix: "/requisitions",
     visibleTo: ["submitter", "treasurer", "signer", "admin"],
+    badgeKey: "requisitions",
   },
   {
     href: "/deposits",
@@ -68,6 +73,8 @@ type BottomNavProps = {
 
 export function BottomNav({ roles }: BottomNavProps) {
   const pathname = usePathname();
+  const isSigner = roles.includes("signer");
+  const pendingCount = usePendingCount(isSigner);
 
   const visibleItems = NAV_ITEMS.filter((item) => {
     if (!item.visibleTo) return true;
@@ -102,13 +109,18 @@ export function BottomNav({ roles }: BottomNavProps) {
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                <Icon
-                  aria-hidden="true"
-                  className={cn(
-                    "h-6 w-6 shrink-0",
-                    active ? "stroke-[2.25]" : "stroke-2",
+                <span className="relative">
+                  <Icon
+                    aria-hidden="true"
+                    className={cn(
+                      "h-6 w-6 shrink-0",
+                      active ? "stroke-[2.25]" : "stroke-2",
+                    )}
+                  />
+                  {item.badgeKey === "requisitions" && isSigner && (
+                    <NavBadge count={pendingCount} />
                   )}
-                />
+                </span>
                 <span className="leading-none">{item.label}</span>
               </Link>
             </li>

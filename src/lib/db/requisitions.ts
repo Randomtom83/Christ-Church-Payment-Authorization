@@ -132,6 +132,35 @@ export async function updateStatus(id: string, status: string) {
   if (error) throw error;
 }
 
+/** Get pending requisitions that a signer hasn't acted on yet. */
+export async function getPendingForSigner(signerId: string) {
+  const supabase = await createClient();
+
+  // Get all pending_approval requisitions
+  const { data: reqs, error: reqError } = await supabase
+    .from('requisitions')
+    .select(LIST_SELECT)
+    .eq('status', 'pending_approval')
+    .order('submitted_at', { ascending: true });
+
+  if (reqError) throw reqError;
+  if (!reqs || reqs.length === 0) return [];
+
+  // Get this signer's existing approvals
+  const { data: myApprovals } = await supabase
+    .from('approvals')
+    .select('requisition_id')
+    .eq('signer_id', signerId);
+
+  const actedOn = new Set((myApprovals ?? []).map((a) => a.requisition_id));
+
+  // Filter: exclude already acted on AND exclude own submissions
+  return reqs.filter(
+    (r) => !actedOn.has(r.id) && r.submitter &&
+      (Array.isArray(r.submitter) ? r.submitter[0]?.id !== signerId : (r.submitter as { id: string }).id !== signerId)
+  );
+}
+
 /** Get requisitions filtered by status. */
 export async function getByStatus(status: string, ascending = true) {
   const supabase = await createClient();

@@ -3,11 +3,14 @@ import { notFound, redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { getById } from '@/lib/db/requisitions';
 import { getSignedUrl } from '@/lib/db/attachments';
+import { getByRequisition, hasSignerActed, countApproved } from '@/lib/db/approvals';
 import { getAll as getAllAccounts } from '@/lib/db/accounts';
 import { createClient } from '@/lib/supabase/server';
 import { RequisitionDetail } from '@/components/requisitions/requisition-detail';
 import { RequisitionTimeline } from '@/components/requisitions/requisition-timeline';
 import { TreasurerActions } from '@/components/requisitions/treasurer-actions';
+import { SignerActions } from '@/components/requisitions/signer-actions';
+import { ApprovalStatus } from '@/components/requisitions/approval-status';
 import { ReturnBanner } from '@/components/requisitions/return-banner';
 
 export const metadata: Metadata = { title: 'Requisition Detail' };
@@ -29,6 +32,7 @@ export default async function RequisitionDetailPage({ params, searchParams }: Pr
 
   const roles = auth.profile.role as string[];
   const isTreasurer = roles.includes('treasurer') || roles.includes('admin');
+  const isSigner = roles.includes('signer');
   const isSubmitter = requisition.submitted_by === auth.profile.id;
 
   // Get signed URLs for attachments
@@ -40,6 +44,11 @@ export default async function RequisitionDetailPage({ params, searchParams }: Pr
       // Skip files that can't be accessed
     }
   }
+
+  // Get approvals for this requisition
+  const approvals = await getByRequisition(id);
+  const approvedCount = approvals.filter((a) => a.action === 'approved').length;
+  const signerAlreadyActed = isSigner ? await hasSignerActed(id, auth.profile.id) : false;
 
   // Get audit log entries for the timeline
   const supabase = await createClient();
@@ -80,6 +89,27 @@ export default async function RequisitionDetailPage({ params, searchParams }: Pr
         currentUserId={auth.profile.id}
         attachmentUrls={attachmentUrls}
       />
+
+      {/* Approval status — visible to all roles */}
+      <ApprovalStatus
+        amount={requisition.amount}
+        approvals={approvals}
+        status={requisition.status}
+      />
+
+      {/* Signer actions (approve/reject) */}
+      {isSigner && (
+        <SignerActions
+          requisitionId={requisition.id}
+          payeeName={requisition.payee_name}
+          amount={requisition.amount}
+          currentUserId={auth.profile.id}
+          submittedBy={requisition.submitted_by}
+          status={requisition.status}
+          existingApprovalsByUser={signerAlreadyActed}
+          approvedCount={approvedCount}
+        />
+      )}
 
       {/* Treasurer actions (prepare, return, mark paid) */}
       {isTreasurer && (

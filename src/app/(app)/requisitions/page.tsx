@@ -2,10 +2,12 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
-import { getByUser, getAll, getCountsByStatus } from '@/lib/db/requisitions';
+import { getByUser, getAll, getCountsByStatus, getPendingForSigner } from '@/lib/db/requisitions';
+import { getBySignerRecent } from '@/lib/db/approvals';
 import { Button } from '@/components/ui/button';
 import { RequisitionList } from '@/components/requisitions/requisition-list';
 import { TreasurerQueue } from '@/components/requisitions/treasurer-queue';
+import { SignerQueue } from '@/components/requisitions/signer-queue';
 import { CsvExport } from '@/components/requisitions/csv-export';
 
 export const metadata: Metadata = { title: 'Requisitions' };
@@ -16,16 +18,28 @@ export default async function RequisitionsPage() {
 
   const roles = auth.profile.role as string[];
   const isTreasurer = roles.includes('treasurer');
+  const isSigner = roles.includes('signer');
   const isAdmin = roles.includes('admin');
-  const hasElevatedRole = isTreasurer || isAdmin || roles.includes('signer');
+  const hasElevatedRole = isTreasurer || isAdmin || isSigner;
 
-  // Elevated roles see all requisitions; submitters see only their own
+  // Determine which view to show (treasurer takes priority over signer)
+  const showTreasurerQueue = isTreasurer;
+  const showSignerQueue = isSigner && !isTreasurer;
+
+  // Fetch data based on role
   const requisitions = hasElevatedRole
     ? await getAll()
     : await getByUser(auth.profile.id);
 
-  // Treasurer gets queue with counts
   const counts = isTreasurer ? await getCountsByStatus() : {};
+
+  // Signer-specific data
+  const pendingForSigner = showSignerQueue
+    ? await getPendingForSigner(auth.profile.id)
+    : [];
+  const recentApprovals = showSignerQueue
+    ? await getBySignerRecent(auth.profile.id, 30)
+    : [];
 
   return (
     <div className="mx-auto max-w-lg px-4 py-6">
@@ -47,8 +61,10 @@ export default async function RequisitionsPage() {
         </Button>
       </Link>
 
-      {isTreasurer ? (
+      {showTreasurerQueue ? (
         <TreasurerQueue requisitions={requisitions} counts={counts} />
+      ) : showSignerQueue ? (
+        <SignerQueue pending={pendingForSigner} recentApprovals={recentApprovals} />
       ) : (
         <RequisitionList requisitions={requisitions} />
       )}

@@ -128,3 +128,65 @@ export async function notifyTreasurerApproved(req: RequisitionInfo): Promise<voi
     );
   }
 }
+
+/** Notify remaining signers that a second approval is needed (dual-approval items). */
+export async function notifySecondApprovalNeeded(
+  req: RequisitionInfo,
+  firstSignerName: string
+): Promise<void> {
+  const signers = await getSigners();
+  const link = `${APP_URL}/requisitions/${req.id}`;
+
+  for (const s of signers) {
+    if (!s.email) continue;
+    await sendEmail(
+      s.email,
+      `Second Approval Needed: ${req.payee_name} — ${fmtAmount(req.amount)}`,
+      `A requisition needs a second signature.\n\n` +
+      `Payee: ${req.payee_name}\n` +
+      `Amount: ${fmtAmount(req.amount)}\n` +
+      `Description: ${req.description}\n` +
+      `First approved by: ${firstSignerName}\n\n` +
+      `Review and approve here: ${link}`
+    );
+  }
+}
+
+/** Notify treasurer + submitter that a requisition was rejected. */
+export async function notifyRejection(
+  req: RequisitionInfo,
+  reason: string,
+  rejectorName: string
+): Promise<void> {
+  const treasurers = await getTreasurers();
+  const submitter = await getProfile(req.submitted_by);
+  const link = `${APP_URL}/requisitions/${req.id}`;
+
+  // Notify treasurer
+  for (const t of treasurers) {
+    if (!t.email) continue;
+    await sendEmail(
+      t.email,
+      `Requisition Rejected: ${req.payee_name} — ${fmtAmount(req.amount)}`,
+      `A requisition has been rejected by ${rejectorName}.\n\n` +
+      `Payee: ${req.payee_name}\n` +
+      `Amount: ${fmtAmount(req.amount)}\n` +
+      `Reason: ${reason}\n\n` +
+      `View it here: ${link}`
+    );
+  }
+
+  // Notify submitter
+  if (submitter?.email) {
+    await sendEmail(
+      submitter.email,
+      `Requisition Rejected: ${req.payee_name} — ${fmtAmount(req.amount)}`,
+      `Your requisition has been rejected.\n\n` +
+      `Payee: ${req.payee_name}\n` +
+      `Amount: ${fmtAmount(req.amount)}\n` +
+      `Rejected by: ${rejectorName}\n` +
+      `Reason: ${reason}\n\n` +
+      `View it here: ${link}`
+    );
+  }
+}

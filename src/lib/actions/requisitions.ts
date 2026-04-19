@@ -7,6 +7,8 @@ import * as requisitionsDb from '@/lib/db/requisitions';
 import * as attachmentsDb from '@/lib/db/attachments';
 import { writeAuditLog } from '@/lib/db/audit';
 import { createAdminClient } from '@/lib/supabase/server';
+import { dollarsToCents, centsToDollars } from '@/lib/utils/currency';
+import { incrementUseCount } from '@/lib/db/templates';
 
 export type ActionResult = {
   success: boolean;
@@ -39,7 +41,10 @@ export async function createRequisition(formData: FormData): Promise<ActionResul
 
   try {
     // Create the requisition — amount stored as DECIMAL in DB
-    const amount = parseFloat(parsed.data.amount);
+    // Use dollarsToCents then back to avoid float imprecision (CLAUDE.md rule)
+    const amountCents = dollarsToCents(parsed.data.amount);
+    const amount = centsToDollars(amountCents);
+    const templateId = formData.get('template_id') as string | null;
     const requisition = await requisitionsDb.create({
       submitted_by: auth.profile.id,
       payee_name: parsed.data.payee_name,
@@ -49,7 +54,17 @@ export async function createRequisition(formData: FormData): Promise<ActionResul
       account_id: parsed.data.account_id,
       payment_method: parsed.data.payment_method,
       description: parsed.data.description,
+      template_id: templateId || null,
     });
+
+    // If created from a template, increment its use count
+    if (templateId) {
+      try {
+        await incrementUseCount(templateId);
+      } catch {
+        // Non-critical — don't fail the requisition for a count update
+      }
+    }
 
     // Upload attachments
     const files = formData.getAll('files') as File[];
@@ -85,22 +100,27 @@ export async function createRequisition(formData: FormData): Promise<ActionResul
       }
     }
 
-    // Handle template save
+    // Handle template save — errors here should not fail the requisition
     const saveAsTemplate = formData.get('save_as_template') === 'true';
     if (saveAsTemplate) {
       const templateName = formData.get('template_name') as string;
       if (templateName) {
-        const { createTemplate } = await import('@/lib/actions/templates');
-        const templateForm = new FormData();
-        templateForm.set('name', templateName);
-        templateForm.set('entity', parsed.data.entity);
-        templateForm.set('payee_name', parsed.data.payee_name);
-        if (parsed.data.vendor_id) templateForm.set('vendor_id', parsed.data.vendor_id);
-        templateForm.set('amount', parsed.data.amount);
-        templateForm.set('account_id', parsed.data.account_id);
-        templateForm.set('payment_method', parsed.data.payment_method);
-        templateForm.set('description', parsed.data.description);
-        await createTemplate(templateForm);
+        try {
+          const { createTemplate } = await import('@/lib/actions/templates');
+          const templateForm = new FormData();
+          templateForm.set('name', templateName);
+          templateForm.set('entity', parsed.data.entity);
+          templateForm.set('payee_name', parsed.data.payee_name);
+          if (parsed.data.vendor_id) templateForm.set('vendor_id', parsed.data.vendor_id);
+          templateForm.set('amount', parsed.data.amount);
+          templateForm.set('account_id', parsed.data.account_id);
+          templateForm.set('payment_method', parsed.data.payment_method);
+          templateForm.set('description', parsed.data.description);
+          await createTemplate(templateForm);
+        } catch (templateErr) {
+          // Template save failed but requisition was created — don't fail the whole request
+          console.error('Template save failed (requisition still created):', templateErr);
+        }
       }
     }
 

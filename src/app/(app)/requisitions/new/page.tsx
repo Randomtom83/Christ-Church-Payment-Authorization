@@ -49,6 +49,7 @@ export default async function NewRequisitionPage({ searchParams }: Props) {
       <RequisitionForm
         accounts={accounts}
         vendors={vendors}
+        templateId={params.template ?? null}
         templateData={templateData}
       />
     </div>

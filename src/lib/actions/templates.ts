@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { templateSchema } from '@/lib/validators/requisition';
 import * as templatesDb from '@/lib/db/templates';
 import { writeAuditLog } from '@/lib/db/audit';
+import { dollarsToCents, centsToDollars } from '@/lib/utils/currency';
 
 export type ActionResult = {
   success: boolean;
@@ -33,7 +34,7 @@ export async function createTemplate(formData: FormData): Promise<ActionResult> 
   }
 
   try {
-    const amount = parsed.data.amount ? parseFloat(parsed.data.amount) : null;
+    const amount = parsed.data.amount ? centsToDollars(dollarsToCents(parsed.data.amount)) : null;
     const template = await templatesDb.create({
       created_by: auth.profile.id,
       name: parsed.data.name,
@@ -89,7 +90,7 @@ export async function updateTemplate(id: string, formData: FormData): Promise<Ac
   }
 
   try {
-    const amount = parsed.data.amount ? parseFloat(parsed.data.amount) : null;
+    const amount = parsed.data.amount ? centsToDollars(dollarsToCents(parsed.data.amount)) : null;
     await templatesDb.update(id, {
       name: parsed.data.name,
       payee_name: parsed.data.payee_name,

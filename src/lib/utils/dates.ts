@@ -1,7 +1,6 @@
 import { format, formatDistanceToNow } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
-
-const APP_TIMEZONE = 'America/New_York';
+import { APP_TIMEZONE } from '@/lib/constants';
 
 /** Format a date as "Apr 18, 2026" in Eastern time */
 export function formatDate(date: Date | string): string {

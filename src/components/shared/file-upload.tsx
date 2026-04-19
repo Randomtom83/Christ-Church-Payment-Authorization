@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { compressImage, validateFileSize } from '@/hooks/use-camera';
 
@@ -46,9 +46,27 @@ export function FileUpload({ files, onChange, maxFiles = 10, error }: FileUpload
     onChange(files.filter((_, i) => i !== index));
   };
 
+  // Track object URLs for cleanup to prevent memory leaks
+  const [previewUrls, setPreviewUrls] = useState<Record<number, string>>({});
+
+  useEffect(() => {
+    const urls: Record<number, string> = {};
+    files.forEach((file, index) => {
+      if (file.type.startsWith('image/')) {
+        urls[index] = URL.createObjectURL(file);
+      }
+    });
+    setPreviewUrls(urls);
+
+    // Revoke old URLs on cleanup
+    return () => {
+      Object.values(urls).forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [files]);
+
   const previews = files.map((file, index) => {
     const isImage = file.type.startsWith('image/');
-    const url = isImage ? URL.createObjectURL(file) : null;
+    const url = isImage ? previewUrls[index] ?? null : null;
     return { file, index, isImage, url };
   });
 

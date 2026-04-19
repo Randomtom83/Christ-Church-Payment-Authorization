@@ -11,6 +11,7 @@ const STATUS_CONFIG: Record<
   paid: { label: 'Paid', icon: '💵', variant: 'default' },
   rejected: { label: 'Rejected', icon: '✕', variant: 'destructive' },
   cancelled: { label: 'Cancelled', icon: '—', variant: 'outline' },
+  recorded: { label: 'Recorded', icon: '✓', variant: 'default' },
 };
 
 type StatusBadgeProps = {
@@ -34,6 +35,7 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
     paid: 'bg-green-100 text-green-800 border-green-200',
     rejected: 'bg-red-100 text-red-800 border-red-200',
     cancelled: 'bg-gray-100 text-gray-600 border-gray-200',
+    recorded: 'bg-green-100 text-green-800 border-green-200',
   };
 
   return (

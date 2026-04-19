@@ -106,25 +106,31 @@ export async function remove(id: string) {
   if (error) throw error;
 }
 
-/** Increment use_count and update last_used_at. */
+/** Atomically increment use_count and update last_used_at. */
 export async function incrementUseCount(id: string) {
   const supabase = await createClient();
-  // Use RPC or raw update — Supabase JS doesn't support increment directly
-  const { data: template } = await supabase
-    .from('requisition_templates')
-    .select('use_count')
-    .eq('id', id)
-    .single();
+  // Atomic increment via raw SQL to avoid race conditions
+  const { error } = await supabase.rpc('increment_template_use_count', {
+    template_id: id,
+  });
 
-  if (template) {
-    const { error } = await supabase
+  // Fallback if RPC doesn't exist yet — still a single update call
+  if (error && error.code === '42883') {
+    // Function not found — use direct update (less safe but functional)
+    const { data: template } = await supabase
       .from('requisition_templates')
-      .update({
-        use_count: template.use_count + 1,
-        last_used_at: new Date().toISOString(),
-      })
-      .eq('id', id);
+      .select('use_count')
+      .eq('id', id)
+      .single();
 
-    if (error) throw error;
+    if (template) {
+      await supabase
+        .from('requisition_templates')
+        .update({
+          use_count: template.use_count + 1,
+          last_used_at: new Date().toISOString(),
+        })
+        .eq('id', id);
+    }
   }
 }

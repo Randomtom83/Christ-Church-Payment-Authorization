@@ -16,6 +16,7 @@ import type { Vendor } from '@/lib/db/vendors';
 type RequisitionFormProps = {
   accounts: Account[];
   vendors: Vendor[];
+  templateId?: string | null;
   templateData?: {
     entity?: string;
     payee_name?: string;
@@ -27,7 +28,7 @@ type RequisitionFormProps = {
   } | null;
 };
 
-export function RequisitionForm({ accounts, vendors, templateData }: RequisitionFormProps) {
+export function RequisitionForm({ accounts, vendors, templateId, templateData }: RequisitionFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -82,10 +83,13 @@ export function RequisitionForm({ accounts, vendors, templateData }: Requisition
     setVendorId(value);
     if (option) {
       setPayeeName(option.label);
-      // Check for default account
+      // Check for default account — only use it if it matches the selected entity
       const vendor = vendors.find((v) => v.id === value);
       if (vendor?.default_account_id) {
-        setAccountId(vendor.default_account_id);
+        const defaultAccount = accounts.find((a) => a.id === vendor.default_account_id);
+        if (defaultAccount && defaultAccount.entity === entity) {
+          setAccountId(vendor.default_account_id);
+        }
       }
     } else {
       setPayeeName('');
@@ -154,6 +158,7 @@ export function RequisitionForm({ accounts, vendors, templateData }: Requisition
     formData.set('account_id', accountId);
     formData.set('payment_method', paymentMethod);
     formData.set('description', description);
+    if (templateId) formData.set('template_id', templateId);
 
     // Attach files
     for (const file of files) {
@@ -270,7 +275,12 @@ export function RequisitionForm({ accounts, vendors, templateData }: Requisition
             value={amount}
             onChange={(e) => {
               // Allow only digits and one decimal point
-              const val = e.target.value.replace(/[^0-9.]/g, '');
+              let val = e.target.value.replace(/[^0-9.]/g, '');
+              // Prevent multiple decimal points
+              const parts = val.split('.');
+              if (parts.length > 2) {
+                val = parts[0] + '.' + parts.slice(1).join('');
+              }
               setAmount(val);
             }}
             onBlur={() => validateField('amount', amount)}
